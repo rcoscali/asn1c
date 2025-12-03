@@ -5,6 +5,7 @@
 #include "asn1c_misc.h"
 #include "asn1c_save.h"
 #include "asn1c_out.h"
+#include "asn1compiler.h"
 
 #ifndef HAVE_SYMLINK
 #define symlink(a,b) (errno=ENOSYS, -1)
@@ -77,7 +78,7 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 		return 0;	/* Finished */
 	}
 
-	if (arg->flags & AC1_MAKE) {	  
+	if (arg->flags & A1C_MAKE) {	  
 	  mkf = asn1c_open_file("Makefile.am", ".sample", 0);
 	  if(mkf == NULL) {
 	    perror("Makefile.am.sample");
@@ -106,10 +107,20 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 	  }
 	  safe_fprintf(mkf, "\n\n");
 	}
-	else if (arg->flags & AC1_CMAKE) {
+	else if (arg->flags & A1C_CMAKE) {
+	  mkf = asn1c_open_file("CMakeLists.txt", ".sample", 0);
+	  if(mkf == NULL) {
+	    perror("CMakeLists.txt.sample");
+	    return -1;
+	  }
 	  safe_fprintf(stderr, "CMake generation NYI\n");
 	}
-	else if (arg->flags & AC1_LXMAKE) {
+	else if (arg->flags & A1C_LXMAKE) {
+	  mkf = asn1c_open_file("Makefile.linux", ".sample", 0);
+	  if(mkf == NULL) {
+	    perror("Makefile.linux.sample");
+	    return -1;
+	  }
 	  safe_fprintf(stderr, "LXMake generation NYI\n");
 	}
 	
