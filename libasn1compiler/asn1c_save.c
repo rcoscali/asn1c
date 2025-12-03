@@ -52,6 +52,7 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 	asn1c_fdeps_t *dlist;
 	asn1p_module_t *mod;
 	FILE *mkf;	/* Makefile.am.sample */
+	char *mkf_filename = (char *)NULL;
 	int i;
 
 	deps = asn1c_read_file_dependencies(arg, datadir);
@@ -84,28 +85,7 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 	    perror("Makefile.am.sample");
 	    return -1;
 	  }
-
-	  safe_fprintf(mkf, "ASN_MODULE_SOURCES=");
-	  TQ_FOR(mod, &(arg->asn->modules), mod_next) {
-	    TQ_FOR(arg->expr, &(mod->members), next) {
-	      if(asn1_lang_map[arg->expr->meta_type]
-		 [arg->expr->expr_type].type_cb) {
-		safe_fprintf(mkf, "\t\\\n\t%s.c",
-			     arg->expr->Identifier);
-	      }
-	    }
-	  }
-	  safe_fprintf(mkf, "\n\nASN_MODULE_HEADERS=");
-	  TQ_FOR(mod, &(arg->asn->modules), mod_next) {
-	    TQ_FOR(arg->expr, &(mod->members), next) {
-	      if(asn1_lang_map[arg->expr->meta_type]
-		 [arg->expr->expr_type].type_cb) {
-		safe_fprintf(mkf, "\t\\\n\t%s.h",
-			     arg->expr->Identifier);
-	      }
-	    }
-	  }
-	  safe_fprintf(mkf, "\n\n");
+	  mkf_filename = "Makefile.am.sample";
 	}
 	else if (arg->flags & A1C_CMAKE) {
 	  mkf = asn1c_open_file("CMakeLists.txt", ".sample", 0);
@@ -114,6 +94,7 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 	    return -1;
 	  }
 	  safe_fprintf(stderr, "CMake generation NYI\n");
+	  mkf_filename = "CMakeLists.txt.sample";
 	}
 	else if (arg->flags & A1C_LXMAKE) {
 	  mkf = asn1c_open_file("Makefile.linux", ".sample", 0);
@@ -122,8 +103,31 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 	    return -1;
 	  }
 	  safe_fprintf(stderr, "LXMake generation NYI\n");
+	  mkf_filename = "Makefile.linux.sample";
 	}
 	
+	safe_fprintf(mkf, "ASN_MODULE_SOURCES=");
+	TQ_FOR(mod, &(arg->asn->modules), mod_next) {
+	  TQ_FOR(arg->expr, &(mod->members), next) {
+	    if(asn1_lang_map[arg->expr->meta_type]
+	       [arg->expr->expr_type].type_cb) {
+	      safe_fprintf(mkf, "\t\\\n\t%s.c",
+			   arg->expr->Identifier);
+	    }
+	  }
+	}
+	safe_fprintf(mkf, "\n\nASN_MODULE_HEADERS=");
+	TQ_FOR(mod, &(arg->asn->modules), mod_next) {
+	  TQ_FOR(arg->expr, &(mod->members), next) {
+	    if(asn1_lang_map[arg->expr->meta_type]
+	       [arg->expr->expr_type].type_cb) {
+	      safe_fprintf(mkf, "\t\\\n\t%s.h",
+			   arg->expr->Identifier);
+	    }
+	  }
+	}
+	safe_fprintf(mkf, "\n\n");
+	  
 	/*
 	 * Move necessary skeleton files and add them to Makefile.am.sample.
 	 */
@@ -176,41 +180,47 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 			return -1;
 	}
 
-	safe_fprintf(mkf, "\n\n"
-		"lib_LTLIBRARIES=libsomething.la\n"
-		"libsomething_la_SOURCES="
-			"$(ASN_MODULE_SOURCES) $(ASN_MODULE_HEADERS)\n"
-		"\n"
-		"# This file may be used as an input for make(3)\n"
-		"# Remove the lines below to convert it into a pure .am file\n"
-		"TARGET = progname\n"
-		"CFLAGS +=%s%s -I.\n"
-		"OBJS=${ASN_MODULE_SOURCES:.c=.o}"
-		  " ${ASN_CONVERTER_SOURCES:.c=.o}\n"
-		"\nall: $(TARGET)\n"
-		"\n$(TARGET): ${OBJS}"
-		"\n\t$(CC) $(CFLAGS) -o $(TARGET) ${OBJS} $(LDFLAGS) $(LIBS)\n"
-		"\n.SUFFIXES:"
-		"\n.SUFFIXES: .c .o\n"
-		"\n.c.o:"
-		"\n\t$(CC) $(CFLAGS) -o $@ -c $<\n"
-		"\nclean:"
-		"\n\trm -f $(TARGET)"
-		"\n\trm -f $(OBJS)\n"
-		"\nregen: regenerate-from-asn1-source\n"
-		"\nregenerate-from-asn1-source:\n\t"
-		, (arg->flags & A1C_PDU_TYPE)
-			? generate_pdu_C_definition() : ""
-		, need_to_generate_pdu_collection(arg)
-			? " -DASN_PDU_COLLECTION" : ""
-	);
+	if (arg->flags & A1C_MAKE) {	  
+	  safe_fprintf(mkf, "\n\n"
+		       "lib_LTLIBRARIES=libsomething.la\n"
+		       "libsomething_la_SOURCES="
+		       "$(ASN_MODULE_SOURCES) $(ASN_MODULE_HEADERS)\n"
+		       "\n"
+		       "# This file may be used as an input for make(3)\n"
+		       "# Remove the lines below to convert it into a pure .am file\n"
+		       "TARGET = progname\n"
+		       "CFLAGS +=%s%s -I.\n"
+		       "OBJS=${ASN_MODULE_SOURCES:.c=.o}"
+		       " ${ASN_CONVERTER_SOURCES:.c=.o}\n"
+		       "\nall: $(TARGET)\n"
+		       "\n$(TARGET): ${OBJS}"
+		       "\n\t$(CC) $(CFLAGS) -o $(TARGET) ${OBJS} $(LDFLAGS) $(LIBS)\n"
+		       "\n.SUFFIXES:"
+		       "\n.SUFFIXES: .c .o\n"
+		       "\n.c.o:"
+		       "\n\t$(CC) $(CFLAGS) -o $@ -c $<\n"
+		       "\nclean:"
+		       "\n\trm -f $(TARGET)"
+		       "\n\trm -f $(OBJS)\n"
+		       "\nregen: regenerate-from-asn1-source\n"
+		       "\nregenerate-from-asn1-source:\n\t"
+		       , (arg->flags & A1C_PDU_TYPE)
+		       ? generate_pdu_C_definition() : ""
+		       , need_to_generate_pdu_collection(arg)
+		       ? " -DASN_PDU_COLLECTION" : ""
+		       );
+	}
+	else if (arg->flags & A1C_CMAKE) {
+	}
+	else if (arg->flags & A1C_LXMAKE) {
+	}
 
 	for(i = 0; i < argc; i++)
-		safe_fprintf(mkf, "%s%s", i ? " " : "", argv[i]);
+	  safe_fprintf(mkf, "%s%s", i ? " " : "", argv[i]);
 	safe_fprintf(mkf, "\n\n");
 
 	fclose(mkf);
-	safe_fprintf(stderr, "Generated Makefile.am.sample\n");
+	safe_fprintf(stderr, "Generated %s!\n", mkf_filename);
 
 	return 0;
 }
