@@ -480,6 +480,9 @@ usage(const char *av0) {
 "\n"
 
 "  -gen-PER              Generate PER support code\n"
+"  -Gmake                Generate support files for building with make (default)\n"
+"  -Gcmake               Generate support files for building with cmake\n"
+"  -Glxmake              Generate support files for building with Linux makefiles (for building code as a Linux kernel part)\n"
 "  -pdu={all|auto|Type}  Generate PDU table (discover PDUs automatically)\n"
 "\n"
 
