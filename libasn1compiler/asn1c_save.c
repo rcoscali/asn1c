@@ -73,38 +73,46 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 	 * Dump out the Makefile template and the rest of the support code.
 	 */
 	if((arg->flags & A1C_PRINT_COMPILED)
-	|| (arg->flags & A1C_OMIT_SUPPORT_CODE)) {
+	   || (arg->flags & A1C_OMIT_SUPPORT_CODE)) {
 		return 0;	/* Finished */
 	}
 
-	mkf = asn1c_open_file("Makefile.am", ".sample", 0);
-	if(mkf == NULL) {
-		perror("Makefile.am.sample");
-		return -1;
-	}
+	if (arg->flags & AC1_MAKE) {	  
+	  mkf = asn1c_open_file("Makefile.am", ".sample", 0);
+	  if(mkf == NULL) {
+	    perror("Makefile.am.sample");
+	    return -1;
+	  }
 
-	safe_fprintf(mkf, "ASN_MODULE_SOURCES=");
-	TQ_FOR(mod, &(arg->asn->modules), mod_next) {
-		TQ_FOR(arg->expr, &(mod->members), next) {
-			if(asn1_lang_map[arg->expr->meta_type]
-				[arg->expr->expr_type].type_cb) {
-				safe_fprintf(mkf, "\t\\\n\t%s.c",
-				arg->expr->Identifier);
-			}
-		}
+	  safe_fprintf(mkf, "ASN_MODULE_SOURCES=");
+	  TQ_FOR(mod, &(arg->asn->modules), mod_next) {
+	    TQ_FOR(arg->expr, &(mod->members), next) {
+	      if(asn1_lang_map[arg->expr->meta_type]
+		 [arg->expr->expr_type].type_cb) {
+		safe_fprintf(mkf, "\t\\\n\t%s.c",
+			     arg->expr->Identifier);
+	      }
+	    }
+	  }
+	  safe_fprintf(mkf, "\n\nASN_MODULE_HEADERS=");
+	  TQ_FOR(mod, &(arg->asn->modules), mod_next) {
+	    TQ_FOR(arg->expr, &(mod->members), next) {
+	      if(asn1_lang_map[arg->expr->meta_type]
+		 [arg->expr->expr_type].type_cb) {
+		safe_fprintf(mkf, "\t\\\n\t%s.h",
+			     arg->expr->Identifier);
+	      }
+	    }
+	  }
+	  safe_fprintf(mkf, "\n\n");
 	}
-	safe_fprintf(mkf, "\n\nASN_MODULE_HEADERS=");
-	TQ_FOR(mod, &(arg->asn->modules), mod_next) {
-		TQ_FOR(arg->expr, &(mod->members), next) {
-			if(asn1_lang_map[arg->expr->meta_type]
-				[arg->expr->expr_type].type_cb) {
-				safe_fprintf(mkf, "\t\\\n\t%s.h",
-				arg->expr->Identifier);
-			}
-		}
+	else if (arg->flags & AC1_CMAKE) {
+	  safe_fprintf(stderr, "CMake generation NYI\n");
 	}
-	safe_fprintf(mkf, "\n\n");
-
+	else if (arg->flags & AC1_LXMAKE) {
+	  safe_fprintf(stderr, "LXMake generation NYI\n");
+	}
+	
 	/*
 	 * Move necessary skeleton files and add them to Makefile.am.sample.
 	 */

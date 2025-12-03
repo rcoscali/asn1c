@@ -69,7 +69,7 @@ main(int ac, char **av) {
     /*
      * Process command-line options.
      */
-    while((ch = getopt(ac, av, "EFf:g:hLPp:RS:vW:X")) != -1) switch(ch) {
+    while((ch = getopt(ac, av, "EFf:g:hLPp:RS:vW:XG:")) != -1) switch(ch) {
         case 'E':
             print_arg__print_out = 1;
             break;
@@ -114,6 +114,21 @@ main(int ac, char **av) {
                 exit(EX_USAGE);
             }
             break;
+        case 'G':
+            if(strcmp(optarg, "makefile") == 0) {
+                asn1_compiler_flags |= A1C_MAKE;
+                break;	    
+	    } else if (strcmp(optarg, "cmake") == 0) {
+	        asn1_compiler_flags |= A1C_CMAKE;
+		break;
+	    } else if (strcmp(optarg, "lxmake") == 0) {
+	        asn1_compiler_flags |= A1C_LXMAKE;
+		break;
+	    } else {
+                fprintf(stderr, "-G%s: Invalid argument\n", optarg);
+                exit(EX_USAGE);
+	    }
+	    break;
         case 'g':
             if(strcmp(optarg, "en-PER") == 0) {
                 asn1_compiler_flags |= A1C_GEN_PER;
