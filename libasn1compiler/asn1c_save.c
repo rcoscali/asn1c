@@ -51,8 +51,8 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 	asn1c_fdeps_t *deps = 0;
 	asn1c_fdeps_t *dlist;
 	asn1p_module_t *mod;
-	FILE *mkf;	/* Makefile.am.sample */
-	char *mkf_filename = (char *)NULL;
+	FILE *mkf = (FILE *)NULL;	   /* Makefile.am.sample|CMakeLists.txt.sample|Makefile.linux.sample */
+	char *mkf_filename = (char *)NULL; /* Makefile.am.sample|CMakeLists.txt.sample|Makefile.linux.sample */
 	int i;
 
 	deps = asn1c_read_file_dependencies(arg, datadir);
