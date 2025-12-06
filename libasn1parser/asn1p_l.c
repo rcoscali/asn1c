@@ -2603,7 +2603,7 @@ YY_RULE_SETUP
 #line 150 "asn1p_l.l"
 {
 			fprintf(stderr,
-				"ASN.1 Parser syncronization failure: "
+				"ASN.1 Parser synchronization failure: "
 				"\"%s\" at line %d must not appear "
 				"inside value definition\n",
 				asn1p_text, asn1p_lineno);

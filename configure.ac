@@ -1,11 +1,9 @@
 AC_INIT([asn1c],[0.9.28],[vlm@lionet.info])
 
 AC_CONFIG_AUX_DIR(config)
-AC_CONFIG_HEADER([config.h])
-AM_INIT_AUTOMAKE([foreign])
+AC_CONFIG_HEADERS([config.h])
+AM_INIT_AUTOMAKE([foreign serial-tests])
 AC_CONFIG_MACRO_DIR([m4])
-
-LT_INIT
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -15,7 +13,11 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_YACC
 AM_PROG_LEX
-AC_PATH_PROG(AR, ar, ar, $PATH:/usr/ucb:/usr/ccs/bin)	dnl for Solaris
+m4_ifdef([AM_PROG_AR],
+				 [AM_PROG_AR],
+				 [AC_PATH_PROG(AR, ar, ar, $PATH:/usr/ucb:/usr/ccs/bin)])
+
+LT_INIT
 
 dnl If you need to see the details, just run make V=1.
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -90,7 +92,15 @@ AX_CHECK_COMPILE_FLAG([-Wno-duplicate-decl-specifier],
 AC_SUBST(SKELETONS_CFLAGS)
 
 dnl Checks for header files.
-AC_HEADER_STDC
+m4_warn([obsolete],
+[The preprocessor macro `STDC_HEADERS' is obsolete.
+  Except in unusual embedded environments, you can safely include all
+  ISO C90 headers unconditionally.])dnl
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 AC_CHECK_HEADERS(sys/param.h)
 AC_CHECK_HEADERS(alloca.h)
 
