@@ -86,15 +86,59 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 	    return -1;
 	  }
 	  mkf_filename = "Makefile.am.sample";
+
+	  safe_fprintf(mkf, "ASN_MODULE_SOURCES=");
+	  TQ_FOR(mod, &(arg->asn->modules), mod_next) {
+	    TQ_FOR(arg->expr, &(mod->members), next) {
+	      if(asn1_lang_map[arg->expr->meta_type]
+		 [arg->expr->expr_type].type_cb) {
+		safe_fprintf(mkf, "\t\\\n\t%s.c",
+			     arg->expr->Identifier);
+	      }
+	    }
+	  }
+	  safe_fprintf(mkf, "\n\nASN_MODULE_HEADERS=");
+	  TQ_FOR(mod, &(arg->asn->modules), mod_next) {
+	    TQ_FOR(arg->expr, &(mod->members), next) {
+	      if(asn1_lang_map[arg->expr->meta_type]
+		 [arg->expr->expr_type].type_cb) {
+		safe_fprintf(mkf, "\t\\\n\t%s.h",
+			     arg->expr->Identifier);
+	      }
+	    }
+	  }
+	  safe_fprintf(mkf, "\n\n");
 	}
 	else if (arg->flags & A1C_CMAKE) {
 	  mkf = asn1c_open_file("CMakeLists.txt", ".sample", 0);
 	  if(mkf == NULL) {
 	    perror("CMakeLists.txt.sample");
 	    return -1;
-	  }
+	  }	  
 	  safe_fprintf(stderr, "CMake generation NYI\n");
 	  mkf_filename = "CMakeLists.txt.sample";
+
+	  safe_fprintf(mkf, "set(ASN_MODULE_SOURCES ");
+	  TQ_FOR(mod, &(arg->asn->modules), mod_next) {
+	    TQ_FOR(arg->expr, &(mod->members), next) {
+	      if(asn1_lang_map[arg->expr->meta_type]
+		 [arg->expr->expr_type].type_cb) {
+		safe_fprintf(mkf, "\n\t%s.c",
+			     arg->expr->Identifier);
+	      }
+	    }
+	  }
+	  safe_fprintf(mkf, ")\n\nset(ASN_MODULE_HEADERS ");
+	  TQ_FOR(mod, &(arg->asn->modules), mod_next) {
+	    TQ_FOR(arg->expr, &(mod->members), next) {
+	      if(asn1_lang_map[arg->expr->meta_type]
+		 [arg->expr->expr_type].type_cb) {
+		safe_fprintf(mkf, "\n\t%s.h",
+			     arg->expr->Identifier);
+	      }
+	    }
+	  }
+	  safe_fprintf(mkf, ")\n\n");
 	}
 	else if (arg->flags & A1C_LXMAKE) {
 	  mkf = asn1c_open_file("Makefile.linux", ".sample", 0);
@@ -106,28 +150,6 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 	  mkf_filename = "Makefile.linux.sample";
 	}
 	
-	safe_fprintf(mkf, "ASN_MODULE_SOURCES=");
-	TQ_FOR(mod, &(arg->asn->modules), mod_next) {
-	  TQ_FOR(arg->expr, &(mod->members), next) {
-	    if(asn1_lang_map[arg->expr->meta_type]
-	       [arg->expr->expr_type].type_cb) {
-	      safe_fprintf(mkf, "\t\\\n\t%s.c",
-			   arg->expr->Identifier);
-	    }
-	  }
-	}
-	safe_fprintf(mkf, "\n\nASN_MODULE_HEADERS=");
-	TQ_FOR(mod, &(arg->asn->modules), mod_next) {
-	  TQ_FOR(arg->expr, &(mod->members), next) {
-	    if(asn1_lang_map[arg->expr->meta_type]
-	       [arg->expr->expr_type].type_cb) {
-	      safe_fprintf(mkf, "\t\\\n\t%s.h",
-			   arg->expr->Identifier);
-	    }
-	  }
-	}
-	safe_fprintf(mkf, "\n\n");
-	  
 	/*
 	 * Move necessary skeleton files and add them to Makefile.am.sample.
 	 */
@@ -169,13 +191,31 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 				what_kind = "HEADERS";
 			else
 				what_kind = "SOURCES";
-			safe_fprintf(mkf, "ASN_%s_%s+=%s\n",
-				what_class, what_kind, fname);
+			
+			if (arg->flags & A1C_MAKE) {
+			  safe_fprintf(mkf, "ASN_%s_%s+=%s\n",
+				       what_class, what_kind, fname);
+			}
+			else if (arg->flags & A1C_CMAKE) {
+			  safe_fprintf(mkf, "list(APPEND ${ASN_%s_%s} %s)\n",
+				       what_class, what_kind, fname);
+			}
+			else if (arg->flags & A1C_LXMAKE) {
+			  safe_fprintf(mkf, "ASN_%s_%s+=%s\n",
+				       what_class, what_kind, fname);
+			}
 		}
 	}
 
 	if(need_to_generate_pdu_collection(arg)) {
-		safe_fprintf(mkf, "ASN_CONVERTER_SOURCES+=pdu_collection.c\n");
+	  	if (arg->flags & A1C_MAKE) {
+		  safe_fprintf(mkf, "ASN_CONVERTER_SOURCES+=pdu_collection.c\n");
+	  	}
+	  	else if (arg->flags & A1C_CMAKE) {
+		  safe_fprintf(mkf, "set(ASN_CONVERTER_SOURCES pdu_collection.c)\n");
+	  	}
+	  	else if (arg->flags & A1C_LXMAKE) {
+	  	}
 		if(generate_pdu_collection_file(arg))
 			return -1;
 	}
@@ -211,6 +251,18 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 		       );
 	}
 	else if (arg->flags & A1C_CMAKE) {
+	  safe_fprintf(mkf, "\n\n"
+		       "set(lib_LTLIBRARIES libsomething.a)\n\n"
+		       "set(libsomething_a_SOURCES ${ASN_MODULE_SOURCES})\n\n"
+		       "add_executable(target progname)\n\n"
+		       "target_compile_definitions(target _DEFAULT_SOURCE)\n\n"
+		       "target_compile_definitions(target PDU %s)\n\n"
+		       "target_include_directories(target PRIVATE .)\n\n"
+		       , (arg->flags & A1C_PDU_TYPE)
+		       ? generate_pdu_C_definition() : ""
+		       , need_to_generate_pdu_collection(arg)
+		       ? " -DASN_PDU_COLLECTION" : ""
+		       );
 	}
 	else if (arg->flags & A1C_LXMAKE) {
 	}
