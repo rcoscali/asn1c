@@ -202,7 +202,7 @@ asn1c_save_compiled_output(arg_t *arg, const char *datadir,
 				       what_class, what_kind, fname);
 			}
 			else if (arg->flags & A1C_CMAKE) {
-			  safe_fprintf(mkf, "list(APPEND ${ASN_%s_%s} %s)\n",
+			  safe_fprintf(mkf, "list(APPEND ASN_%s_%s %s)\n",
 				       what_class, what_kind, fname);
 			}
 			else if (arg->flags & A1C_LXMAKE) {
